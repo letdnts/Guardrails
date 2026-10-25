@@ -1034,10 +1034,6 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
         # Check for any errors (not counting eviction warnings)
         self.assertEqual(len(results), 0, f"Errors found: {results}")
 
-        # Eviction warnings should be minimal with large cache
-        if eviction_warnings:
-            print(f"Note: {len(eviction_warnings)} keys were evicted during test")
-
     def test_concurrent_reset_stats(self):
         """Test thread safety of reset_stats operations."""
         errors = []
