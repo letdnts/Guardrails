@@ -724,6 +724,20 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
         """Set up test fixtures."""
         self.cache = LFUCache(100, track_stats=True)
 
+    def _read_write_worker(self, cache, errors, thread_id, operations_per_thread):
+        """Exercise private and shared keys in one concurrent worker."""
+        for i in range(operations_per_thread):
+            key = f"thread_{thread_id}_key_{i}"
+            value = f"thread_{thread_id}_value_{i}"
+            cache.put(key, value)
+            retrieved = cache.get(key)
+            if retrieved != value:
+                errors.append(f"Data corruption for {key}: expected {value}, got {retrieved}")
+
+            shared_key = f"shared_key_{i % 10}"
+            cache.put(shared_key, f"shared_value_{thread_id}_{i}")
+            cache.get(shared_key)
+
     def test_concurrent_reads_writes(self):
         """Test that concurrent reads and writes don't corrupt the cache."""
         num_threads = 10
@@ -731,31 +745,11 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
         # Use a larger cache to avoid evictions during the test
         large_cache = LFUCache(2000, track_stats=True)
         errors = []
-
-        def worker(thread_id):
-            """Worker function that performs cache operations."""
-            for i in range(operations_per_thread):
-                key = f"thread_{thread_id}_key_{i}"
-                value = f"thread_{thread_id}_value_{i}"
-
-                # Put operation
-                large_cache.put(key, value)
-
-                # Get operation - should always succeed with large cache
-                retrieved = large_cache.get(key)
-
-                # Verify data integrity
-                if retrieved != value:
-                    errors.append(f"Data corruption for {key}: expected {value}, got {retrieved}")
-
-                # Access some shared keys
-                shared_key = f"shared_key_{i % 10}"
-                large_cache.put(shared_key, f"shared_value_{thread_id}_{i}")
-                large_cache.get(shared_key)
-
-        # Run threads
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
-            futures = [executor.submit(worker, i) for i in range(num_threads)]
+            futures = [
+                executor.submit(self._read_write_worker, large_cache, errors, i, operations_per_thread)
+                for i in range(num_threads)
+            ]
             for future in futures:
                 future.result()  # Wait for completion and raise any exceptions
 
