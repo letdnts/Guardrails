@@ -1091,38 +1091,32 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
 
         asyncio.run(run_test())
 
+    def _evicting_worker(self, cache, data_integrity_errors, thread_id):
+        """Exercise evictions while allowing keys to disappear between operations."""
+        for i in range(100):
+            key = f"t{thread_id}_k{i}"
+            value = f"t{thread_id}_v{i}"
+            cache.put(key, value)
+            retrieved = cache.get(key)
+
+            # Value might be None if evicted immediately (unlikely but possible)
+            if retrieved is not None and retrieved != value:
+                # This would indicate actual data corruption
+                data_integrity_errors.append(f"Wrong value for {key}: expected {value}, got {retrieved}")
+
+            # Also work with some high-frequency keys (access multiple times)
+            high_freq_key = f"high_freq_{thread_id % 5}"
+            for _ in range(3):  # Access 3 times to increase frequency
+                cache.put(high_freq_key, f"high_freq_value_{thread_id}")
+                cache.get(high_freq_key)
+
     def test_concurrent_operations_with_evictions(self):
         """Test thread safety when cache is at maxsize and evictions occur."""
         # Small cache to force evictions
         small_cache = LFUCache(50, track_stats=True)
         data_integrity_errors = []
-
-        def worker(thread_id):
-            """Worker that handles potential evictions gracefully."""
-            for i in range(100):
-                key = f"t{thread_id}_k{i}"
-                value = f"t{thread_id}_v{i}"
-
-                # Put value
-                small_cache.put(key, value)
-
-                # Immediately access to increase frequency
-                retrieved = small_cache.get(key)
-
-                # Value might be None if evicted immediately (unlikely but possible)
-                if retrieved is not None and retrieved != value:
-                    # This would indicate actual data corruption
-                    data_integrity_errors.append(f"Wrong value for {key}: expected {value}, got {retrieved}")
-
-                # Also work with some high-frequency keys (access multiple times)
-                high_freq_key = f"high_freq_{thread_id % 5}"
-                for _ in range(3):  # Access 3 times to increase frequency
-                    small_cache.put(high_freq_key, f"high_freq_value_{thread_id}")
-                    small_cache.get(high_freq_key)
-
-        # Run workers
         with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(worker, i) for i in range(10)]
+            futures = [executor.submit(self._evicting_worker, small_cache, data_integrity_errors, i) for i in range(10)]
             for future in futures:
                 future.result()
 
