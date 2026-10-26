@@ -444,13 +444,19 @@ class TestLFUCacheStatsLogging(unittest.TestCase):
 
         cache = LFUCache(5, track_stats=True, stats_logging_interval=0.1)
 
-        # Generate a miss first
-        cache.get("nonexistent")
+        with (
+            patch("nemoguardrails.llm.cache.lfu.time") as mock_time,
+            patch.object(logging.getLogger("nemoguardrails.llm.cache.lfu"), "info") as mock_log,
+        ):
+            mock_time.time.return_value = 1000.0
 
-        # Wait for interval to pass
-        time.sleep(0.2)
+            # Generate a miss first
+            cache.get("nonexistent")
+            mock_log.assert_not_called()
 
-        with patch.object(logging.getLogger("nemoguardrails.llm.cache.lfu"), "info") as mock_log:
+            # Advance the clock past the logging interval
+            mock_time.time.return_value += 0.2
+
             # This will trigger stats logging with the previous miss already counted
             cache.get("another_nonexistent")  # Trigger check
 
