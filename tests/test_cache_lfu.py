@@ -944,7 +944,6 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
 
     def test_thread_safe_size_operations(self):
         """Test that size-related operations are thread-safe."""
-        results = []
 
         def worker(thread_id):
             """Worker that checks size consistency."""
@@ -957,21 +956,17 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
                 is_empty = self.cache.is_empty()
 
                 # Size should never be negative or exceed maxsize
-                if size < 0 or size > 100:
-                    results.append(f"Invalid size: {size}")
+                self.assertGreaterEqual(size, 0, f"Thread {thread_id}: Invalid size: {size}")
+                self.assertLessEqual(size, 100, f"Thread {thread_id}: Invalid size: {size}")
 
                 # is_empty should match size
-                if (size == 0) != is_empty:
-                    results.append(f"Size {size} but is_empty={is_empty}")
+                self.assertEqual(size == 0, is_empty, f"Thread {thread_id}: Size {size} but is_empty={is_empty}")
 
         # Run workers
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(worker, i) for i in range(10)]
             for future in futures:
                 future.result()
-
-        # Check for any inconsistencies
-        self.assertEqual(len(results), 0, f"Inconsistencies found: {results}")
 
     def test_concurrent_contains_operations(self):
         """Test thread safety of contains method."""
