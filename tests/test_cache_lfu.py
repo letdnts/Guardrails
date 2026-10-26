@@ -978,39 +978,31 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
         for i in range(50):
             large_cache.put(f"existing_key_{i}", f"value_{i}")
 
-        results = []
-        eviction_warnings = []
-
         def worker(thread_id):
             """Worker that checks contains and manipulates cache."""
             for i in range(100):
                 # Check existing keys
                 key = f"existing_key_{i % 50}"
-                if not large_cache.contains(key):
-                    results.append(f"Thread {thread_id}: Missing key {key}")
+                self.assertTrue(large_cache.contains(key), f"Thread {thread_id}: Missing key {key}")
 
                 # Add new keys
                 new_key = f"new_key_{thread_id}_{i}"
                 large_cache.put(new_key, f"value_{thread_id}_{i}")
 
-                # Check new key immediately
-                if not large_cache.contains(new_key):
-                    # This could happen if cache is full and eviction occurred
-                    # Track it separately as it's not a thread safety issue
-                    eviction_warnings.append(f"Thread {thread_id}: Key {new_key} possibly evicted")
+                # The cache holds all 550 keys, so a new key must remain present.
+                self.assertTrue(large_cache.contains(new_key), f"Thread {thread_id}: Missing new key {new_key}")
 
                 # Check non-existent keys
-                if large_cache.contains(f"non_existent_{thread_id}_{i}"):
-                    results.append(f"Thread {thread_id}: Found non-existent key")
+                self.assertFalse(
+                    large_cache.contains(f"non_existent_{thread_id}_{i}"),
+                    f"Thread {thread_id}: Found non-existent key at operation {i}",
+                )
 
         # Run workers
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = [executor.submit(worker, i) for i in range(5)]
             for future in futures:
                 future.result()
-
-        # Check for any errors (not counting eviction warnings)
-        self.assertEqual(len(results), 0, f"Errors found: {results}")
 
     def test_concurrent_reset_stats(self):
         """Test thread safety of reset_stats operations."""
