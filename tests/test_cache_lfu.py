@@ -596,9 +596,9 @@ class TestLFUCacheStatsLogging(unittest.TestCase):
             with patch.object(logging.getLogger("nemoguardrails.llm.cache.lfu"), "info") as mock_log:
                 cache.log_stats_now()
 
-                if hits > 0 or misses > 0:
-                    log_message = mock_log.call_args[0][1]
-                    self.assertIn(f"Hit Rate: {expected_rate}", log_message)
+                mock_log.assert_called_once()
+                log_message = mock_log.call_args[0][1]
+                self.assertIn(f"Hit Rate: {expected_rate}", log_message)
 
 
 class TestContentSafetyCacheStatsConfig(unittest.TestCase):
