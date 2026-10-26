@@ -580,14 +580,15 @@ class TestLFUCacheStatsLogging(unittest.TestCase):
             (99, 1, "99.00%"),  # High hit rate
         ]
 
+        # Populate the hit key before resetting the counters for each scenario.
+        cache.put("hit_key", "value")
+
         for hits, misses, expected_rate in test_cases:
             cache.reset_stats()
 
             # Generate hits
-            if hits > 0:
-                cache.put("hit_key", "value")
-                for _ in range(hits):
-                    cache.get("hit_key")
+            for _ in range(hits):
+                cache.get("hit_key")
 
             # Generate misses
             for i in range(misses):
