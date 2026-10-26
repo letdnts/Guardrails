@@ -267,11 +267,9 @@ class TestLFUCache(unittest.TestCase):
 
     def test_repeated_puts_same_key(self):
         """Test repeated puts with the same key maintain size=1 and update frequency."""
+        self.cache = LFUCache(3, track_stats=True)
         self.cache.put("key", "value1")
         self.assertEqual(self.cache.size(), 1)
-
-        # Track initial state
-        initial_stats = self.cache.get_stats() if self.cache.track_stats else None
 
         # Update same key multiple times
         for i in range(10):
@@ -281,11 +279,8 @@ class TestLFUCache(unittest.TestCase):
         # Final value should be the last one
         self.assertEqual(self.cache.get("key"), "value9")
 
-        # Verify stats if tracking enabled
-        if self.cache.track_stats:
-            final_stats = self.cache.get_stats()
-            # Should have 10 updates (after initial put)
-            self.assertEqual(final_stats["updates"], 10)
+        # Should have 10 updates (after initial put)
+        self.assertEqual(self.cache.get_stats()["updates"], 10)
 
     def test_access_pattern_preserves_frequently_used(self):
         """Test that frequently accessed items are preserved during evictions."""
