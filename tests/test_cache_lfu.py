@@ -999,7 +999,6 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
 
     def test_concurrent_reset_stats(self):
         """Test thread safety of reset_stats operations."""
-        errors = []
 
         def worker(thread_id):
             """Worker that performs operations and resets stats."""
@@ -1015,17 +1014,13 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
 
                 # Check stats integrity
                 stats = self.cache.get_stats()
-                if any(v < 0 for v in stats.values() if isinstance(v, (int, float))):
-                    errors.append(f"Thread {thread_id}: Negative stat value: {stats}")
+                self.assertGreaterEqual(min(stats.values()), 0, f"Thread {thread_id}: Negative stat value: {stats}")
 
         # Run workers
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = [executor.submit(worker, i) for i in range(5)]
             for future in futures:
                 future.result()
-
-        # Verify no errors
-        self.assertEqual(len(errors), 0, f"Stats errors: {errors[:5]}")
 
     def test_get_or_compute_concurrent_different_keys(self):
         """Test get_or_compute with different keys being computed concurrently."""
