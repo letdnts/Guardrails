@@ -413,17 +413,22 @@ class TestLFUCacheStatsLogging(unittest.TestCase):
 
         cache = LFUCache(5, track_stats=True, stats_logging_interval=0.5)
 
-        # Add some data
-        cache.put("key1", "value1")
-        cache.put("key2", "value2")
+        with (
+            patch("nemoguardrails.llm.cache.lfu.time") as mock_time,
+            patch.object(logging.getLogger("nemoguardrails.llm.cache.lfu"), "info") as mock_log,
+        ):
+            mock_time.time.return_value = 1000.0
 
-        with patch.object(logging.getLogger("nemoguardrails.llm.cache.lfu"), "info") as mock_log:
+            # Add some data
+            cache.put("key1", "value1")
+            cache.put("key2", "value2")
+
             # Initial operations shouldn't trigger logging
             cache.get("key1")
             self.assertEqual(mock_log.call_count, 0)
 
-            # Wait for interval to pass
-            time.sleep(0.6)
+            # Advance the clock past the logging interval
+            mock_time.time.return_value += 0.6
 
             # Next operation should trigger logging
             cache.get("key1")
@@ -433,8 +438,8 @@ class TestLFUCacheStatsLogging(unittest.TestCase):
             cache.get("key2")
             self.assertEqual(mock_log.call_count, 1)
 
-            # Wait again
-            time.sleep(0.6)
+            # Advance the clock by another logging interval
+            mock_time.time.return_value += 0.6
             cache.put("key3", "value3")
             self.assertEqual(mock_log.call_count, 2)
 
