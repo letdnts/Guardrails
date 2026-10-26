@@ -479,18 +479,26 @@ class TestLFUCacheStatsLogging(unittest.TestCase):
 
         cache = LFUCache(3, track_stats=True, stats_logging_interval=0.1)
 
-        # Fill cache
-        cache.put("key1", "value1")
-        cache.put("key2", "value2")
-        cache.put("key3", "value3")
+        with (
+            patch("nemoguardrails.llm.cache.lfu.time") as mock_time,
+            patch.object(logging.getLogger("nemoguardrails.llm.cache.lfu"), "info") as mock_log,
+        ):
+            mock_time.time.return_value = 1000.0
 
-        # Cause eviction
-        cache.put("key4", "value4")
+            # Fill cache
+            cache.put("key1", "value1")
+            cache.put("key2", "value2")
+            cache.put("key3", "value3")
 
-        with patch.object(logging.getLogger("nemoguardrails.llm.cache.lfu"), "info") as mock_log:
-            time.sleep(0.2)
+            # Cause eviction
+            cache.put("key4", "value4")
+            mock_log.assert_not_called()
+
+            # Advance the clock past the logging interval
+            mock_time.time.return_value += 0.2
             cache.get("key4")  # Trigger check
 
+            mock_log.assert_called_once()
             log_message = mock_log.call_args[0][1]
             self.assertIn("Size: 3/3", log_message)
             self.assertIn("Evictions: 1", log_message)
