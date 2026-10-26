@@ -839,13 +839,11 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
                 self.cache.get(key)  # Hit
                 self.cache.get(f"nonexistent_{thread_id}_{i}")  # Miss
 
-                # Periodically check stats
-                if i % 10 == 0:
-                    stats = self.cache.get_stats()
-                    # Just verify we can get stats without error
-                    self.assertIsInstance(stats, dict)
-                    self.assertIn("hits", stats)
-                    self.assertIn("misses", stats)
+                # Check the statistics structure after every group of operations.
+                stats = self.cache.get_stats()
+                self.assertIsInstance(stats, dict)
+                self.assertIn("hits", stats)
+                self.assertIn("misses", stats)
 
         # Run threads
         with ThreadPoolExecutor(max_workers=5) as executor:
