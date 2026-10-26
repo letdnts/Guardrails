@@ -864,8 +864,8 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
         self.assertGreater(final_stats["misses"], 0)
         self.assertGreater(final_stats["puts"], 0)
 
-    def test_get_or_compute_thread_safety(self):
-        """Test thread safety of get_or_compute method."""
+    async def _compute_shared_key_concurrently(self):
+        """Run ten requests for the same key and return results and computations."""
         compute_count = threading.local()
         compute_count.value = 0
         total_computes = []
@@ -885,35 +885,24 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
             await asyncio.sleep(0.1)
             return f"computed_value_{len(total_computes)}"
 
-        async def worker(thread_id):
-            """Worker that tries to get or compute the same key."""
-            result = await self.cache.get_or_compute("shared_compute_key", expensive_compute, default="default")
-            return result
+        tasks = [
+            self.cache.get_or_compute("shared_compute_key", expensive_compute, default="default") for _ in range(10)
+        ]
+        return await asyncio.gather(*tasks), total_computes
 
-        async def run_test():
-            """Run the async test."""
-            # Run multiple workers concurrently
-            tasks = [worker(i) for i in range(10)]
-            results = await asyncio.gather(*tasks)
-
-            # All should get the same value
-            self.assertTrue(
-                all(r == results[0] for r in results),
-                f"All threads should get same value, got: {results}",
-            )
-
-            # Compute should have been called only once
-            self.assertEqual(
-                len(total_computes),
-                1,
-                f"Compute should be called once, called {len(total_computes)} times",
-            )
-
-            return results[0]
-
-        # Run the async test
-        result = asyncio.run(run_test())
-        self.assertEqual(result, "computed_value_1")
+    def test_get_or_compute_thread_safety(self):
+        """Test thread safety of get_or_compute method."""
+        results, total_computes = asyncio.run(self._compute_shared_key_concurrently())
+        self.assertTrue(
+            all(r == results[0] for r in results),
+            f"All threads should get same value, got: {results}",
+        )
+        self.assertEqual(
+            len(total_computes),
+            1,
+            f"Compute should be called once, called {len(total_computes)} times",
+        )
+        self.assertEqual(results[0], "computed_value_1")
 
     def test_get_or_compute_exception_handling(self):
         """Test get_or_compute handles exceptions properly.
