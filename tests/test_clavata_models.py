@@ -285,62 +285,19 @@ class TestCreateJobResponse:
 
     def test_model_validate_complete_job_response(self):
         """Test that CreateJobResponse can parse a complete job response with nested structures"""
-        json_data = {
-            "job": {
-                "status": "JOB_STATUS_COMPLETED",
-                "results": [
-                    {
-                        "report": {
-                            "result": "OUTCOME_TRUE",
-                            "sectionEvaluationReports": [
-                                {
-                                    "name": "Label1",
-                                    "message": "First section matched",
-                                    "result": "OUTCOME_TRUE",
-                                },
-                                {
-                                    "name": "Label2",
-                                    "message": "Second section did not match",
-                                    "result": "OUTCOME_FALSE",
-                                },
-                                {
-                                    "name": "Label3",
-                                    "message": "Third section evaluation failed",
-                                    "result": "OUTCOME_FAILED",
-                                },
-                            ],
-                        }
-                    }
-                ],
-            }
-        }
+        sections = [
+            ("Label1", "First section matched", "OUTCOME_TRUE"),
+            ("Label2", "Second section did not match", "OUTCOME_FALSE"),
+            ("Label3", "Third section evaluation failed", "OUTCOME_FAILED"),
+        ]
 
-        response = CreateJobResponse.model_validate(json_data)
+        response = CreateJobResponse.model_validate(_job_response_json(sections))
 
-        # Check overall response
         assert response.job.status == "JOB_STATUS_COMPLETED"
-
-        # Check results
         assert len(response.job.results) == 1
         report = response.job.results[0].report
         assert report.result == "OUTCOME_TRUE"
-
-        # Check sections
-        sections = report.sectionEvaluationReports
-        assert len(sections) == 3
-
-        # Verify all section fields
-        assert sections[0].name == "Label1"
-        assert sections[0].message == "First section matched"
-        assert sections[0].result == "OUTCOME_TRUE"
-
-        assert sections[1].name == "Label2"
-        assert sections[1].message == "Second section did not match"
-        assert sections[1].result == "OUTCOME_FALSE"
-
-        assert sections[2].name == "Label3"
-        assert sections[2].message == "Third section evaluation failed"
-        assert sections[2].result == "OUTCOME_FAILED"
+        assert [(s.name, s.message, s.result) for s in report.sectionEvaluationReports] == sections
 
 
 @pytest.fixture
