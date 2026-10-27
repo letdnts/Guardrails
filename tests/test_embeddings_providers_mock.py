@@ -371,16 +371,14 @@ class TestAzureEmbeddingModelMocked:
 
     def test_import_error_when_openai_not_installed(self):
         with patch.dict("sys.modules", {"openai": None}):
+            sys.modules.pop("nemoguardrails.embeddings.providers.azureopenai", None)
             with pytest.raises(ImportError, match="Could not import openai"):
-                if "nemoguardrails.embeddings.providers.azureopenai" in sys.modules:
-                    del sys.modules["nemoguardrails.embeddings.providers.azureopenai"]
-
                 from nemoguardrails.embeddings.providers.azureopenai import (
                     AzureEmbeddingModel,
                 )
 
                 AzureEmbeddingModel("text-embedding-ada-002")
-
+                
     def test_encode_success(self):
         mock_openai = MagicMock()
         mock_client = Mock()
