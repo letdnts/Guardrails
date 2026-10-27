@@ -793,24 +793,24 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
 
     def test_concurrent_clear_operations(self):
         """Test concurrent clear operations with other operations."""
+        write_done = threading.Semaphore(0)
 
         def writer():
-            """Continuously write to cache."""
+            """Continuously write to cache, signaling after each write."""
             for i in range(100):
                 self.cache.put(f"key_{i}", f"value_{i}")
-                time.sleep(0.001)  # Small delay
+                write_done.release()
 
         def clearer():
-            """Periodically clear the cache."""
+            """Clear the cache after each of the first writes signaled."""
             for _ in range(5):
-                time.sleep(0.01)
+                assert write_done.acquire(timeout=5)
                 self.cache.clear()
 
         def reader():
             """Continuously read from cache."""
             for i in range(100):
                 self.cache.get(f"key_{i}")
-                time.sleep(0.001)
 
         # Run operations concurrently
         threads = [
