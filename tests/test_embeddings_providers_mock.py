@@ -594,10 +594,8 @@ class TestGoogleEmbeddingModelMocked:
 
     def test_import_error_when_google_genai_not_installed(self):
         with patch.dict("sys.modules", {"google": None, "google.genai": None}):
+            sys.modules.pop("nemoguardrails.embeddings.providers.google", None)
             with pytest.raises(ImportError, match="Could not import google-genai"):
-                if "nemoguardrails.embeddings.providers.google" in sys.modules:
-                    del sys.modules["nemoguardrails.embeddings.providers.google"]
-
                 from nemoguardrails.embeddings.providers.google import (
                     GoogleEmbeddingModel,
                 )
