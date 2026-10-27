@@ -19,6 +19,13 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
+COHERE_MODELS = [
+    ("embed-v4.0", 1536),
+    ("embed-english-v3.0", 1024),
+    ("embed-english-light-v3.0", 384),
+    ("embed-multilingual-v3.0", 1024),
+    ("embed-multilingual-light-v3.0", 384),
+]
 
 class TestCohereEmbeddingModelMocked:
     def test_init_with_known_model(self):
@@ -163,27 +170,18 @@ class TestCohereEmbeddingModelMocked:
 
             mock_cohere.Client.assert_called_once_with(api_key="test-key-123")
 
-    def test_all_predefined_models(self):
+    @pytest.mark.parametrize("model_name, expected_size", COHERE_MODELS)
+    def test_all_predefined_models(self, model_name, expected_size):
         mock_cohere = MagicMock()
         mock_client = Mock()
         mock_cohere.Client.return_value = mock_client
 
-        models_to_test = {
-            "embed-v4.0": 1536,
-            "embed-english-v3.0": 1024,
-            "embed-english-light-v3.0": 384,
-            "embed-multilingual-v3.0": 1024,
-            "embed-multilingual-light-v3.0": 384,
-        }
-
         with patch.dict("sys.modules", {"cohere": mock_cohere}):
             from nemoguardrails.embeddings.providers.cohere import CohereEmbeddingModel
 
-            for model_name, expected_size in models_to_test.items():
-                model = CohereEmbeddingModel(model_name)
-                assert model.embedding_size == expected_size
-                assert model.model == model_name
-
+            model = CohereEmbeddingModel(model_name)
+            assert model.embedding_size == expected_size
+            assert model.model == model_name
 
 class TestOpenAIEmbeddingModelMocked:
     def test_init_with_known_model(self):
