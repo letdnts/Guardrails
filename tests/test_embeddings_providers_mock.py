@@ -550,6 +550,11 @@ class TestAzureEmbeddingModelMocked:
             assert len(result) == 1
 
 
+GOOGLE_MODELS = [
+    ("gemini-embedding-001", 3072),
+]
+
+
 class TestGoogleEmbeddingModelMocked:
     def test_init_with_known_model(self):
         mock_genai_module = MagicMock()
@@ -713,25 +718,21 @@ class TestGoogleEmbeddingModelMocked:
             model = GoogleEmbeddingModel("gemini-embedding-001", api_key="test-key-123")
 
             mock_genai.Client.assert_called_once_with(api_key="test-key-123")
-
-    def test_all_predefined_models(self):
+    
+    @pytest.mark.parametrize("model_name, expected_size", GOOGLE_MODELS)
+    def test_all_predefined_models(self, model_name, expected_size):
         mock_genai_module = MagicMock()
         mock_genai = MagicMock()
         mock_client = Mock()
         mock_genai.Client.return_value = mock_client
         mock_genai_module.genai = mock_genai
 
-        models_to_test = {
-            "gemini-embedding-001": 3072,
-        }
-
         with patch.dict("sys.modules", {"google": mock_genai_module, "google.genai": mock_genai}):
             from nemoguardrails.embeddings.providers.google import GoogleEmbeddingModel
 
-            for model_name, expected_size in models_to_test.items():
-                model = GoogleEmbeddingModel(model_name)
-                assert model.embedding_size == expected_size
-                assert model.model == model_name
+            model = GoogleEmbeddingModel(model_name)
+            assert model.embedding_size == expected_size
+            assert model.model == model_name
 
     def test_engine_name_attribute(self):
         mock_genai_module = MagicMock()
