@@ -183,7 +183,14 @@ class TestCohereEmbeddingModelMocked:
             assert model.embedding_size == expected_size
             assert model.model == model_name
 
-class TestOpenAIEmbeddingModelMocked:
+  
+OPENAI_MODELS = [
+    ("text-embedding-ada-002", 1536),
+    ("text-embedding-3-small", 1536),
+    ("text-embedding-3-large", 3072),
+]
+class TestOpenAIEmbeddingModelMocked:    
+    
     def test_init_with_known_model(self):
         mock_openai = MagicMock()
         mock_openai.__version__ = "1.0.0"
@@ -306,26 +313,19 @@ class TestOpenAIEmbeddingModelMocked:
 
             mock_openai.OpenAI.assert_called_once_with(api_key="test-key-123")
 
-    def test_all_predefined_models(self):
+    @pytest.mark.parametrize("model_name, expected_size", OPENAI_MODELS)
+    def test_all_predefined_models(self, model_name, expected_size):
         mock_openai = MagicMock()
         mock_openai.__version__ = "1.0.0"
         mock_client = Mock()
         mock_openai.OpenAI.return_value = mock_client
 
-        models_to_test = {
-            "text-embedding-ada-002": 1536,
-            "text-embedding-3-small": 1536,
-            "text-embedding-3-large": 3072,
-        }
-
         with patch.dict("sys.modules", {"openai": mock_openai}):
             from nemoguardrails.embeddings.providers.openai import OpenAIEmbeddingModel
 
-            for model_name, expected_size in models_to_test.items():
-                model = OpenAIEmbeddingModel(model_name)
-                assert model.embedding_size == expected_size
-                assert model.model == model_name
-
+            model = OpenAIEmbeddingModel(model_name)
+            assert model.embedding_size == expected_size
+            assert model.model == model_name
 
 class TestAzureEmbeddingModelMocked:
     def test_init_with_known_model(self):
