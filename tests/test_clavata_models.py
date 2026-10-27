@@ -224,57 +224,42 @@ class TestPolicyResult:
         assert "Expected 1 report per job" in str(excinfo.value)
 
 
+def _job_response_json(sections, status="JOB_STATUS_COMPLETED", result="OUTCOME_TRUE"):
+    return {
+        "job": {
+            "status": status,
+            "results": [
+                {
+                    "report": {
+                        "result": result,
+                        "sectionEvaluationReports": [
+                            {"name": name, "message": message, "result": section_result}
+                            for name, message, section_result in sections
+                        ],
+                    }
+                }
+            ],
+        }
+    }
+
 @pytest.mark.unit
 class TestCreateJobResponse:
     def test_model_validate_valid_json(self):
         """Test that CreateJobResponse can parse a valid JSON response"""
-        # This simulates the parsed JSON that would come from an API response
-        json_data = {
-            "job": {
-                "status": "JOB_STATUS_COMPLETED",
-                "results": [
-                    {
-                        "report": {
-                            "result": "OUTCOME_TRUE",
-                            "sectionEvaluationReports": [
-                                {
-                                    "name": "DogBarking",
-                                    "message": "Content contains references to dog barking",
-                                    "result": "OUTCOME_TRUE",
-                                },
-                                {
-                                    "name": "CatMeowing",
-                                    "message": "No cat sounds detected",
-                                    "result": "OUTCOME_FALSE",
-                                },
-                            ],
-                        }
-                    }
-                ],
-            }
-        }
+        sections = [
+            ("DogBarking", "Content contains references to dog barking", "OUTCOME_TRUE"),
+            ("CatMeowing", "No cat sounds detected", "OUTCOME_FALSE"),
+        ]
 
-        # This is what would happen in _make_request after resp.json()
-        response = CreateJobResponse.model_validate(json_data)
+        response = CreateJobResponse.model_validate(_job_response_json(sections))
 
-        # Verify the response was parsed correctly
         assert response.job.status == "JOB_STATUS_COMPLETED"
         assert len(response.job.results) == 1
-        assert response.job.results[0].report.result == "OUTCOME_TRUE"
-        assert len(response.job.results[0].report.sectionEvaluationReports) == 2
-
-        # Check first section
-        section1 = response.job.results[0].report.sectionEvaluationReports[0]
-        assert section1.name == "DogBarking"
-        assert section1.message == "Content contains references to dog barking"
-        assert section1.result == "OUTCOME_TRUE"
-
-        # Check second section
-        section2 = response.job.results[0].report.sectionEvaluationReports[1]
-        assert section2.name == "CatMeowing"
-        assert section2.message == "No cat sounds detected"
-        assert section2.result == "OUTCOME_FALSE"
-
+        report = response.job.results[0].report
+        assert report.result == "OUTCOME_TRUE"
+        assert [(s.name, s.message, s.result) for s in report.sectionEvaluationReports] == sections
+        
+        
     def test_model_validate_missing_fields(self):
         """Test that CreateJobResponse validation fails on missing required fields"""
         # Missing 'results' field
