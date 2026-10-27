@@ -225,10 +225,8 @@ class TestOpenAIEmbeddingModelMocked:
 
     def test_import_error_when_openai_not_installed(self):
         with patch.dict("sys.modules", {"openai": None}):
+            sys.modules.pop("nemoguardrails.embeddings.providers.openai", None)
             with pytest.raises(ImportError, match="Could not import openai") as exc_info:
-                if "nemoguardrails.embeddings.providers.openai" in sys.modules:
-                    del sys.modules["nemoguardrails.embeddings.providers.openai"]
-
                 from nemoguardrails.embeddings.providers.openai import (
                     OpenAIEmbeddingModel,
                 )
