@@ -327,6 +327,12 @@ class TestOpenAIEmbeddingModelMocked:
             assert model.embedding_size == expected_size
             assert model.model == model_name
 
+
+AZURE_MODELS = [
+    ("text-embedding-ada-002", 1536),
+]
+
+
 class TestAzureEmbeddingModelMocked:
     def test_init_with_known_model(self):
         mock_openai = MagicMock()
@@ -446,25 +452,20 @@ class TestAzureEmbeddingModelMocked:
 
             assert result == [expected_embedding]
             mock_client.embeddings.create.assert_called_once()
-
-    def test_all_predefined_models(self):
+            
+    @pytest.mark.parametrize("model_name, expected_size", AZURE_MODELS)
+    def test_all_predefined_models(self, model_name, expected_size):
         mock_openai = MagicMock()
         mock_client = Mock()
         mock_openai.AzureOpenAI.return_value = mock_client
-
-        models_to_test = {
-            "text-embedding-ada-002": 1536,
-        }
 
         with patch.dict("sys.modules", {"openai": mock_openai}):
             from nemoguardrails.embeddings.providers.azureopenai import (
                 AzureEmbeddingModel,
             )
-
-            for model_name, expected_size in models_to_test.items():
-                model = AzureEmbeddingModel(model_name)
-                assert model.embedding_size == expected_size
-                assert model.embedding_model == model_name
+            model = AzureEmbeddingModel(model_name)
+            assert model.embedding_size == expected_size
+            assert model.embedding_model == model_name
 
     def test_engine_name_attribute(self):
         mock_openai = MagicMock()
