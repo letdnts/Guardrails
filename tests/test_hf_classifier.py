@@ -872,9 +872,11 @@ class TestPipelineConcurrency:
         load_started = threading.Event()
         mock_pipe = mock.MagicMock()
 
+        release_load = threading.Semaphore(0)
+
         def slow_pipeline(**kwargs):
             load_started.set()
-            time.sleep(0.1)
+            assert release_load.acquire(timeout=5)
             return mock_pipe
 
         mock_transformers = mock.MagicMock()
@@ -893,6 +895,7 @@ class TestPipelineConcurrency:
             t2 = threading.Thread(target=loader, args=(1,))
             t2.start()
 
+            release_load.release()
             t1.join(timeout=5)
             t2.join(timeout=5)
 
