@@ -75,10 +75,8 @@ class TestCohereEmbeddingModelMocked:
 
     def test_import_error_when_cohere_not_installed(self):
         with patch.dict("sys.modules", {"cohere": None}):
+            sys.modules.pop("nemoguardrails.embeddings.providers.cohere", None)
             with pytest.raises(ImportError, match="Could not import cohere"):
-                if "nemoguardrails.embeddings.providers.cohere" in sys.modules:
-                    del sys.modules["nemoguardrails.embeddings.providers.cohere"]
-
                 from nemoguardrails.embeddings.providers.cohere import (
                     CohereEmbeddingModel,
                 )
