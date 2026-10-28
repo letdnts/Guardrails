@@ -54,16 +54,10 @@ def retrieve_relevant_chunks():
     )
 
 
-@pytest.mark.asyncio
-
 def _create_patronus_evaluate_chat(monkeypatch, success_strategy="all_pass"):
     monkeypatch.setenv("PATRONUS_API_KEY", "xxx")
 
-    strategy_config = (
-        f'          success_strategy: "{success_strategy}"\n'
-        if success_strategy is not None
-        else ""
-    )
+    strategy_config = f'          success_strategy: "{success_strategy}"\n' if success_strategy is not None else ""
     yaml_evaluate_config = f"""
   config:
     patronus:
@@ -130,7 +124,6 @@ def test_patronus_evaluate_api_success_strategy_all_pass(monkeypatch):
 
         chat >> "Hi"
         chat << "Hi there! How are you doing?"
-
 
 
 @pytest.mark.asyncio

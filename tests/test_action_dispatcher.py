@@ -109,6 +109,8 @@ async def test_execute_action_with_async_invoke():
     result = await dispatcher.execute_action("async_invoke", params={"value": "done"})
 
     assert result == ("done", "success")
+
+
 def _get_manifest_action_refs(record):
     if record.manifest.actions is None:
         return ()
@@ -146,8 +148,8 @@ def test_load_all_actions_registers_builtin_library_action_refs_lazily():
     assert action_module not in sys.modules
     assert callable(registered_actions["content_safety_check_input"])
     assert action_module in sys.modules
-    
-    
+
+
 def test_load_all_actions_preserves_unmanifested_library_actions():
     dispatcher = ActionDispatcher(load_all_actions=True)
 

@@ -27,6 +27,7 @@ COHERE_MODELS = [
     ("embed-multilingual-light-v3.0", 384),
 ]
 
+
 class TestCohereEmbeddingModelMocked:
     def test_init_with_known_model(self):
         mock_cohere = MagicMock()
@@ -183,14 +184,15 @@ class TestCohereEmbeddingModelMocked:
             assert model.embedding_size == expected_size
             assert model.model == model_name
 
-  
+
 OPENAI_MODELS = [
     ("text-embedding-ada-002", 1536),
     ("text-embedding-3-small", 1536),
     ("text-embedding-3-large", 3072),
 ]
-class TestOpenAIEmbeddingModelMocked:    
-    
+
+
+class TestOpenAIEmbeddingModelMocked:
     def test_init_with_known_model(self):
         mock_openai = MagicMock()
         mock_openai.__version__ = "1.0.0"
@@ -382,7 +384,7 @@ class TestAzureEmbeddingModelMocked:
                 )
 
                 AzureEmbeddingModel("text-embedding-ada-002")
-                
+
     def test_encode_success(self):
         mock_openai = MagicMock()
         mock_client = Mock()
@@ -452,7 +454,7 @@ class TestAzureEmbeddingModelMocked:
 
             assert result == [expected_embedding]
             mock_client.embeddings.create.assert_called_once()
-            
+
     @pytest.mark.parametrize("model_name, expected_size", AZURE_MODELS)
     def test_all_predefined_models(self, model_name, expected_size):
         mock_openai = MagicMock()
@@ -463,6 +465,7 @@ class TestAzureEmbeddingModelMocked:
             from nemoguardrails.embeddings.providers.azureopenai import (
                 AzureEmbeddingModel,
             )
+
             model = AzureEmbeddingModel(model_name)
             assert model.embedding_size == expected_size
             assert model.embedding_model == model_name
@@ -718,7 +721,7 @@ class TestGoogleEmbeddingModelMocked:
             model = GoogleEmbeddingModel("gemini-embedding-001", api_key="test-key-123")
 
             mock_genai.Client.assert_called_once_with(api_key="test-key-123")
-    
+
     @pytest.mark.parametrize("model_name, expected_size", GOOGLE_MODELS)
     def test_all_predefined_models(self, model_name, expected_size):
         mock_genai_module = MagicMock()

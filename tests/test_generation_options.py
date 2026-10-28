@@ -280,7 +280,7 @@ def test_generation_log_internal_events_with_rail_outcome_is_json_serializable(o
 
     action_event = _get_outcome_action_event(data["internal_events"])
     assert action_event["return_value"] == _expected_serialized_outcome(outcome)
-    
+
 
 @pytest.mark.parametrize("outcome", _RAIL_OUTCOME_CASES)
 def test_generation_response_activated_rails_with_rail_outcome_is_json_serializable(outcome):
@@ -318,7 +318,7 @@ def test_generation_response_all_output_vars_with_rail_outcome_is_json_serializa
     data = _json_round_trip(res)
 
     assert data["output_data"]["response"] == _expected_serialized_outcome(outcome)
-    
+
 
 @pytest.mark.skip(reason="Run manually.")
 def test_triggered_rails_info_3():

@@ -242,6 +242,7 @@ def _job_response_json(sections, status="JOB_STATUS_COMPLETED", result="OUTCOME_
         }
     }
 
+
 @pytest.mark.unit
 class TestCreateJobResponse:
     def test_model_validate_valid_json(self):
@@ -258,8 +259,7 @@ class TestCreateJobResponse:
         report = response.job.results[0].report
         assert report.result == "OUTCOME_TRUE"
         assert [(s.name, s.message, s.result) for s in report.sectionEvaluationReports] == sections
-        
-        
+
     def test_model_validate_missing_fields(self):
         """Test that CreateJobResponse validation fails on missing required fields"""
         # Missing 'results' field

@@ -22,7 +22,6 @@ maxsize management, and edge cases.
 
 import asyncio
 import threading
-import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
@@ -804,7 +803,7 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
         def clearer():
             """Clear the cache after each of the first writes signaled."""
             for _ in range(5):
-                assert write_done.acquire(timeout=5)
+                self.assertTrue(write_done.acquire(timeout=5), "Timed out waiting for a cache write")
                 self.cache.clear()
 
         def reader():
@@ -813,17 +812,10 @@ class TestLFUCacheThreadSafety(unittest.TestCase):
                 self.cache.get(f"key_{i}")
 
         # Run operations concurrently
-        threads = [
-            threading.Thread(target=writer),
-            threading.Thread(target=clearer),
-            threading.Thread(target=reader),
-        ]
-
-        for thread in threads:
-            thread.start()
-
-        for thread in threads:
-            thread.join()
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = [executor.submit(operation) for operation in (writer, clearer, reader)]
+            for future in futures:
+                future.result()
 
         # Cache should still be functional
         self.cache.put("final_key", "final_value")
